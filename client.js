@@ -85,6 +85,22 @@ class ResponseParser {
         this.headers = {};
         this.headerName = '';
         this.headerValue = '';
+        this.bodyParser = null;
+    }
+
+    get isFinished() {
+        return this.bodyParser && this.bodyParser.isFinished;
+    }
+
+    get response() {
+        console.log('status line', this.statusLine);
+        this.statusLine.match(/HTTP\/1.1 (\d+) ([\s\S]+)/);
+        return {
+            statusCode: RegExp.$1,
+            statusText: RegExp.$2,
+            headers: this.headers,
+            body: this.bodyParser.content.join('')
+        };
     }
 
     receive(string) {
@@ -132,9 +148,60 @@ class ResponseParser {
         } else if (this.current === this.WAITING_HEADER_BLOCK_END) {
             if (char === '\n') {
                 this.current = this.WAITING_BODY;
+                if (this.headers['Transfer-Encoding'] === 'chunked') {
+                    this.bodyParser = new ChunkedBodyParser();
+                }
             }
         } else if (this.current === this.WAITING_BODY) {
-            console.log(char);
+            this.bodyParser.receiveChar(char);
+        }
+    }
+}
+
+class ChunkedBodyParser {
+    constructor() {
+        this.WAITING_LENGTH = 0;
+        this.WAITING_LENGTH_LINE_END = 1;
+        this.READING_TRUNK = 3;
+        this.WAITING_NEW_LINE = 4;
+        this.WAITING_NEW_LINE_END = 5;
+
+        this.current = this.WAITING_LENGTH;
+        this.length = 0;
+        this.content = [];
+        this.isFinished = false;
+    }
+
+    receiveChar(char) {
+        if (this.current === this.WAITING_LENGTH) {
+            if (char === '\r') {
+                if (this.length === 0) {
+                    this.isFinished = true;
+                }
+                this.current = this.WAITING_LENGTH_LINE_END;
+            } else {
+                this.length *= 16;
+                this.length += parseInt(char, 16);
+            }
+        } else if (this.current === this.WAITING_LENGTH_LINE_END) {
+            if (char === '\n') {
+                this.current = this.READING_TRUNK;
+            }
+        } else if (this.current === this.READING_TRUNK) {
+            if (this.length === 0) {
+                this.current = this.WAITING_NEW_LINE;
+                return;
+            }
+            this.content.push(char);
+            this.length--;
+        } else if (this.current === this.WAITING_NEW_LINE) {
+            if (char === '\r') {
+                this.current = this.WAITING_NEW_LINE_END;
+            }
+        } else if (this.current === this.WAITING_NEW_LINE_END) {
+            if (char === '\n') {
+                this.current = this.WAITING_LENGTH;
+            }
         }
     }
 }
