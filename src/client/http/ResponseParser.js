@@ -29,7 +29,7 @@ class ResponseParser {
             statusCode: RegExp.$1,
             statusText: RegExp.$2,
             headers: this.headers,
-            body: this.bodyParser.content.join('')
+            body: this.bodyParser.content.join(''),
         };
     }
 
