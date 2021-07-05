@@ -1,9 +1,17 @@
-// HTML Tokenization Specification: https://html.spec.whatwg.org/#tokenization
+const css = require('css');
+
 const EOF = Symbol('EOF');
 const stack = [{ type: 'document', children: [] }];
 let currentToken;
 let currentAttribute;
 let currentTextNode;
+
+let rules = [];
+
+function addCSSRules(text) {
+    const AST = css.parse(text);
+    rules.push(AST.stylesheet.rules);
+}
 
 function parserHTML(html) {
     let state = data;
@@ -16,6 +24,7 @@ function parserHTML(html) {
 }
 
 function emit(token) {
+    console.log(token);
     const top = stack[stack.length - 1];
 
     if (token.type === 'startTag') {
@@ -53,11 +62,15 @@ function emit(token) {
         if (top.tagName !== token.tagName) {
             throw new Error("Start tag and end tag doesn't match.");
         }
+        if (token.tagName === 'style') {
+            addCSSRules(top.children[0].content);
+        }
         stack.pop();
         currentTextNode = null;
     }
 }
 
+// HTML Tokenization Specification: https://html.spec.whatwg.org/#tokenization
 // TODO: Unhandled character: &
 function data(char) {
     if (char === '<') {
