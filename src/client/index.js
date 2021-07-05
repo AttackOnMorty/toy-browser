@@ -16,7 +16,6 @@ const Parser = require('./parser');
     });
 
     const response = await request.send();
-    console.log(response);
-
     const dom = Parser.parserHTML(response.body);
+    console.log(dom);
 })();

@@ -3,6 +3,7 @@ const EOF = Symbol('EOF');
 const stack = [{ type: 'document', children: [] }];
 let currentToken;
 let currentAttribute;
+let currentTextNode;
 
 function parserHTML(html) {
     let state = data;
@@ -10,12 +11,11 @@ function parserHTML(html) {
         state = state(char);
     }
     state = state(EOF);
+
+    return stack[0];
 }
 
 function emit(token) {
-    console.log(token);
-    // TODO: Handel text
-    if (token.type === 'text') return;
     const top = stack[stack.length - 1];
 
     if (token.type === 'startTag') {
@@ -38,12 +38,23 @@ function emit(token) {
         if (!token.isSelfClosing) {
             stack.push(element);
         }
+
+        currentTextNode = null;
+    } else if (token.type === 'text') {
+        if (currentTextNode === null) {
+            currentTextNode = {
+                type: 'text',
+                content: '',
+            };
+            top.children.push(currentTextNode);
+        }
+        currentTextNode.content += token.content;
     } else if (token.type === 'endTag') {
         if (top.tagName !== token.tagName) {
             throw new Error("Start tag and end tag doesn't match.");
-        } else {
-            stack.pop();
         }
+        stack.pop();
+        currentTextNode = null;
     }
 }
 
