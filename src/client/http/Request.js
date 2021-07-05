@@ -39,7 +39,7 @@ class Request {
             connection = net.createConnection(
                 {
                     host: this.host,
-                    port: this.post
+                    port: this.post,
                 },
                 () => {
                     connection.write(this.toString());

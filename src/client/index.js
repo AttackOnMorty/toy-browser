@@ -8,11 +8,11 @@ const Parser = require('./parser');
         port: 8080,
         path: '/',
         headers: {
-            ['X-weapon']: 'lightsaber'
+            ['X-weapon']: 'lightsaber',
         },
         body: {
-            name: 'Luke Skywalker'
-        }
+            name: 'Luke Skywalker',
+        },
     });
 
     const response = await request.send();

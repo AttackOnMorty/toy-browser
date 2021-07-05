@@ -1,7 +1,6 @@
 const http = require('http');
 
-const HTMLResponse = 
-`<html lang="en">
+const HTMLResponse = `<html lang="en">
     <head>
         <style>
             body div #darth {
