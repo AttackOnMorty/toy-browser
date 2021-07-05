@@ -1,5 +1,6 @@
 // HTML Tokenization Specification: https://html.spec.whatwg.org/#tokenization
 const EOF = Symbol('EOF');
+const stack = [{ type: 'document', children: [] }];
 let currentToken;
 let currentAttribute;
 
@@ -13,6 +14,37 @@ function parserHTML(html) {
 
 function emit(token) {
     console.log(token);
+    // TODO: Handel text
+    if (token.type === 'text') return;
+    const top = stack[stack.length - 1];
+
+    if (token.type === 'startTag') {
+        const element = {
+            type: 'element',
+            tagName: token.tagName,
+            children: [],
+            attributes: [],
+        };
+
+        for (const [key, value] of Object.entries(token)) {
+            if (key !== 'type' && key !== 'tagName') {
+                element.attributes[key] = value;
+            }
+        }
+
+        top.children.push(element);
+        element.parent = top;
+
+        if (!token.isSelfClosing) {
+            stack.push(element);
+        }
+    } else if (token.type === 'endTag') {
+        if (top.tagName !== token.tagName) {
+            throw new Error("Start tag and end tag doesn't match.");
+        } else {
+            stack.pop();
+        }
+    }
 }
 
 // TODO: Unhandled character: &
