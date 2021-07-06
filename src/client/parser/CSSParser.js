@@ -1,8 +1,7 @@
 const css = require('css');
 
-function addCSSRules(text, rules) {
-    const AST = css.parse(text);
-    rules.push(...AST.stylesheet.rules);
+function getCSSRules(text) {
+    return css.parse(text).stylesheet.rules;
 }
 
 /*
@@ -10,64 +9,60 @@ NOTE:
 1. Can only calculate body style.
 2. Ignore recalculation of inline style.
 */
-// REFACTOR: Compute logic
 function computeCSS(element, stack, rules) {
-    const elements = [...stack].reverse();
-
-    if (!element.computedStyle) {
-        element.computedStyle = {};
-    }
-
-    elements.unshift(element);
-
     for (const rule of rules) {
-        const selectors = rule.selectors[0].split(' ').reverse();
+        const selector = rule.selectors[0];
+        const selectorParts = selector.split(' ').reverse();
+        const elements = [...stack].reverse();
 
-        if (!match(element, selectors[0])) continue;
+        // NOTE: Separately calculate whether the first element matches, because self-closing element will not be pushed into stack.
+        if (!match(selectorParts[0], element)) continue;
+        selectorParts.shift();
 
         let matched = false;
-        let j = 1;
-        for (const element of elements) {
-            if (match(element, selectors[j])) {
-                j++;
+        let count = 0;
+        for (const part of selectorParts) {
+            if (match(part, elements[count])) {
+                count++;
             }
         }
-
-        if (j >= selectors.length) {
+        if (count === selectorParts.length) {
             matched = true;
         }
 
         if (matched) {
-            const specificity = specificityOf(rule.selectors[0]);
             const computedStyle = element.computedStyle;
+            const specificity = specificityOf(selector);
             for (const { property, value } of rule.declarations) {
                 if (!computedStyle[property]) {
-                    computedStyle[property] = {};
+                    computedStyle[property] = {
+                        value,
+                        specificity: [0, 0, 0, 0],
+                    };
                 }
-                if (!computedStyle[property].specificity) {
-                    computedStyle[property].value = value;
-                    computedStyle[property].specificity = specificity;
-                } else if (
+                if (
                     compare(computedStyle[property].specificity, specificity) <
                     0
                 ) {
-                    computedStyle[property].value = value;
-                    computedStyle[property].specificity = specificity;
+                    computedStyle[property] = {
+                        value,
+                        specificity,
+                    };
                 }
             }
         }
     }
 }
 
-function match(element, selector) {
-    if (!selector) {
+function match(selector, element) {
+    if (!selector || !element) {
         return false;
     }
 
-    if (selector[0] === '#') {
-        return findAttributeValueBy('id') === selector.slice(1);
-    } else if (selector[0] === '.') {
-        return findAttributeValueBy('class') === selector.slice(1);
+    if (selector.charAt(0) === '#') {
+        return findAttributeValueBy('id') === selector.substring(1);
+    } else if (selector.charAt(0) === '.') {
+        return findAttributeValueBy('class') === selector.substring(1);
     } else {
         return element.tagName === selector;
     }
@@ -109,6 +104,6 @@ function compare(sp1, sp2) {
 }
 
 module.exports = {
-    addCSSRules,
+    getCSSRules,
     computeCSS,
 };

@@ -2,7 +2,7 @@ const CSSParser = require('./CSSParser');
 
 const EOF = Symbol('EOF');
 const stack = [{ type: 'document', children: [] }];
-const rules = [];
+let rules = [];
 let currentToken;
 let currentAttribute;
 let currentTextNode;
@@ -27,6 +27,7 @@ function emit(token) {
             tagName: token.tagName,
             children: [],
             attributes: [],
+            computedStyle: {},
         };
 
         for (const [key, value] of Object.entries(token)) {
@@ -58,7 +59,7 @@ function emit(token) {
             throw new Error("Start tag and end tag doesn't match.");
         }
         if (token.tagName === 'style') {
-            CSSParser.addCSSRules(top.children[0].content, rules);
+            rules = CSSParser.getCSSRules(top.children[0].content);
         }
         stack.pop();
         currentTextNode = null;
