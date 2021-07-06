@@ -17,5 +17,5 @@ const Parser = require('./parser');
 
     const response = await request.send();
     const dom = Parser.parserHTML(response.body);
-    console.log(dom);
+    console.log(JSON.stringify(dom, null, 4));
 })();
