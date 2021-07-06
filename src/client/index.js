@@ -1,5 +1,5 @@
 const Request = require('./http/Request');
-const Parser = require('./parser');
+const Parser = require('./parser/HTMLParser');
 
 (async function () {
     const request = new Request({
